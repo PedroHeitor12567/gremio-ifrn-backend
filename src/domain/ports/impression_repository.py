@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from src.domain.entities.impressions import Impression
+from src.domain.entities.impression import Impression
 
 
 class ImpressionRepository(ABC):
