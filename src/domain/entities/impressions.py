@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 
 @dataclass
-class Impressions:
+class Impression:
     person_name: str
     turma: str
     value: float
