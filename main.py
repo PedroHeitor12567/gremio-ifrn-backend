@@ -9,16 +9,7 @@ from src.adapters.api.impression_router import router as impression_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("🚀 Iniciando aplicação...")
-
     create_tables()
-
-    print("✅ Banco conectado e tabelas verificadas!")
-
-    yield
-
-    print("🛑 Encerrando aplicação...")
-
 
 app = FastAPI(
     title="Grêmio IFRN - Sistema de Impressões",
