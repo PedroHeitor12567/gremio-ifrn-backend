@@ -79,17 +79,6 @@ class GetDashboardUseCase:
             recent_impressions=[_to_response(i) for i in recent],
         )
 
-
-class GetWeeklyReportUseCase:
-    def __init__(self, repository: ImpressionRepository):
-        self._repository = repository
-
-    def execute(self) -> ReportDTO:
-        end = datetime.now()
-        start = end - timedelta(days=7)
-        return _build_report(self._repository, start, end)
-
-
 class GetWeeklyReportUseCase:
     def __init__(self, repository: ImpressionRepository):
         self._repository = repository
