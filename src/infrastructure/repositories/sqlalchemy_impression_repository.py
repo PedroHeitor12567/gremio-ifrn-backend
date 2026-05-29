@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -19,6 +19,8 @@ class SQLAlchemyImpressionRepository(ImpressionRepository):
             person_name=impression.person_name,
             turma=impression.turma,
             value=impression.value,
+            registered_by_id=str(impression.registered_by_id),
+            registered_by_name=impression.registered_by_name,
             created_at=impression.created_at,
         )
         self._session.add(model)
@@ -26,7 +28,7 @@ class SQLAlchemyImpressionRepository(ImpressionRepository):
         self._session.refresh(model)
         return self._to_entity(model)
 
-    def find_by_id(self, impression_id: UUID) -> Impression | None:
+    def find_by_id(self, impression_id: UUID) -> Optional[Impression]:
         model = self._session.query(ImpressionModel).filter(
             ImpressionModel.id == str(impression_id)
         ).first()
@@ -61,5 +63,7 @@ class SQLAlchemyImpressionRepository(ImpressionRepository):
             person_name=model.person_name,
             turma=model.turma,
             value=model.value,
+            registered_by_id=UUID(model.registered_by_id),
+            registered_by_name=model.registered_by_name,
             created_at=model.created_at,
         )
