@@ -8,7 +8,7 @@ class CreateImpressionDTO:
     person_name: str
     turma: str
     value: float
-    registered_by_id = UUID
+    registered_by_id: UUID
     registered_by_name: str
 
 @dataclass
