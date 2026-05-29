@@ -12,6 +12,8 @@ def _to_response(impression: Impression) -> ImpressionResponseDTO:
         person_name=impression.person_name,
         turma=impression.turma,
         value=impression.value,
+        registered_by_id=impression.registered_by_id,
+        registered_by_name=impression.registered_by_name,
         created_at=impression.created_at,
     )
 
@@ -24,6 +26,8 @@ class CreateImpressionUseCase:
             person_name=dto.person_name,
             turma=dto.turma.strip().upper(),
             value=dto.value,
+            registered_by_id=dto.registered_by_id,
+            registered_by_name=dto.registered_by_name,
         )
 
         saved = self.repository.save(impression)
@@ -86,21 +90,38 @@ class GetWeeklyReportUseCase:
         return _build_report(self._repository, start, end)
 
 
+class GetWeeklyReportUseCase:
+    def __init__(self, repository: ImpressionRepository):
+        self._repository = repository
+
+    def execute(self) -> ReportDTO:
+        today = datetime.now()
+        # Segunda-feira da semana atual (weekday 0 = segunda)
+        start = today - timedelta(days=today.weekday())
+        start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+        # Domingo da semana atual
+        end = start + timedelta(days=6)
+        end = end.replace(hour=23, minute=59, second=59, microsecond=999999)
+        return _build_report(self._repository, start, end)
+
+
 class GetMonthlyReportUseCase:
     def __init__(self, repository: ImpressionRepository):
         self._repository = repository
 
     def execute(self) -> ReportDTO:
-        end = datetime.now()
-        start = end - timedelta(days=30)
+        today = datetime.now()
+        start = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        # Último dia do mês
+        if today.month == 12:
+            end = today.replace(year=today.year + 1, month=1, day=1) - timedelta(seconds=1)
+        else:
+            end = today.replace(month=today.month + 1, day=1) - timedelta(seconds=1)
         return _build_report(self._repository, start, end)
 
 
-def _build_report(
-        repository: ImpressionRepository, start: datetime, end: datetime
-) -> ReportDTO:
+def _build_report(repository: ImpressionRepository, start: datetime, end: datetime) -> ReportDTO:
     impressions = repository.find_by_period(start, end)
-
     total_impressions = len(impressions)
     total_value = sum(i.value for i in impressions)
     average_value = total_value / total_impressions if total_impressions > 0 else 0.0
