@@ -14,12 +14,15 @@ SECRET_KEY = "gremio-ifrn-secret-key-2024-change-in-production"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 480
 
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def _hash_password(password: str) -> str:
+    print("PASSWORD:", repr(password))
+    print("TIPO:", type(password))
+    print("BYTES:", len(password.encode("utf-8")))
     return pwd_context.hash(password)
-#v
 
 def _verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
