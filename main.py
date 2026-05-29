@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
         session.close()
     yield
 
-
+#kk
 app = FastAPI(
     title="Grêmio IFRN - Sistema de Impressões",
     version="2.0.0",
