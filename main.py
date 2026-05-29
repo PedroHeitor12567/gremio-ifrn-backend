@@ -1,25 +1,25 @@
+import os
 from contextlib import asynccontextmanager
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.infrastructure.database.connection import create_tables
-from src.adapters.api.impression_router import router as impression_router
+from src.web.api.impression_router import router as impression_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("🚀 Iniciando aplicação...")
+    os.environ["TZ"] = "America/Fortaleza"
+
+    if hasattr(os, "tzset"):
+        os.tzset()
 
     create_tables()
 
-    print("✅ Banco conectado e tabelas verificadas!")
-
     yield
-
-    print("🛑 Encerrando aplicação...")
-
-
+    
 app = FastAPI(
     title="Grêmio IFRN - Sistema de Impressões",
     version="1.0.0",
@@ -28,7 +28,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "https://gremio-ifrn-frontend-wktf.vercel.app/"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "https://gremio-ifrn-frontend-wktf.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

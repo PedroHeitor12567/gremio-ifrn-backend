@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from src.adapters.schemas.impression_schema import (
+from src.web.schemas.impression_schema import (
     CreateImpressionSchema,
     ImpressionResponse,
     DashboardResponse,
