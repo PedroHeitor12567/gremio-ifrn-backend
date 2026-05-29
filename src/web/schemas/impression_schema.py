@@ -1,6 +1,5 @@
 from datetime import datetime
 from uuid import UUID
-
 from pydantic import BaseModel, field_validator
 
 
@@ -29,6 +28,8 @@ class ImpressionResponse(BaseModel):
     person_name: str
     turma: str
     value: float
+    registered_by_id: UUID
+    registered_by_name: str
     created_at: datetime
 
     model_config = {"from_attributes": True}
