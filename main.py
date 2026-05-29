@@ -1,39 +1,40 @@
-import os
 from contextlib import asynccontextmanager
-from zoneinfo import ZoneInfo
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.infrastructure.database.connection import create_tables
-from src.web.api.impression_router import router as impression_router
+from src.infrastructure.database.connection import create_tables, get_session
+from src.adapters.api.impression_router import router as impression_router
+from src.adapters.api.auth_router import router as auth_router
+from src.application.use_cases.auth_use_cases import SeedAdminUseCase
+from src.infrastructure.repositories.sqlalchemy_user_repository import SQLAlchemyUserRepository
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    os.environ["TZ"] = "America/Fortaleza"
-
-    if hasattr(os, "tzset"):
-        os.tzset()
-
     create_tables()
-
+    session = next(get_session())
+    try:
+        SeedAdminUseCase(SQLAlchemyUserRepository(session)).execute()
+    finally:
+        session.close()
     yield
-    
+
+
 app = FastAPI(
     title="Grêmio IFRN - Sistema de Impressões",
-    version="1.0.0",
-    lifespan=lifespan
+    version="2.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "https://gremio-ifrn-frontend-wktf.vercel.app/"],
+    allow_origins=["https://gremio-ifrn-frontend-wktf.vercel.app/"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 app.include_router(impression_router)
 
 
