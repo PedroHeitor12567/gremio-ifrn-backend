@@ -8,6 +8,8 @@ class Impression:
     person_name: str
     turma: str
     value: float
+    registered_by_id: UUID
+    registered_by_name: str
     created_at: datetime = field(default_factory=datetime.now)
     id: UUID = field(default_factory=uuid4)
 
