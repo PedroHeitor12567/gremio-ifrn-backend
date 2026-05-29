@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.infrastructure.database.connection import create_tables
-from src.adapters.api.impression_router import router as impression_router
+from src.web.api.impression_router import router as impression_router
 
 
 @asynccontextmanager
