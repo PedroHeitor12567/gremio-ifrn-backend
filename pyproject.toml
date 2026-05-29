@@ -3,9 +3,10 @@ name = "gremio-ifrn-backend"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
+    "bcrypt>=5.0.0",
     "fastapi>=0.136.3",
     "jose>=1.0.0",
-    "passlib>=1.7.4",
+    "passlib[bcrypt]>=1.7.4",
     "psycopg2-binary>=2.9.12",
     "python-jose>=3.5.0",
     "sqlalchemy>=2.0.50",
