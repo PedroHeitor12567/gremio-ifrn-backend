@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from src.adapters.schemas.impression_schema import (
+from src.web.schemas.impression_schema import (
     CreateImpressionSchema, ImpressionResponse, DashboardResponse, ReportResponse,
 )
 from src.application.dtos.impression_dto import CreateImpressionDTO
@@ -11,7 +11,7 @@ from src.application.use_cases.impression_use_cases import (
     CreateImpressionUseCase, ListImpressionsUseCase, DeleteImpressionUseCase,
     GetDashboardUseCase, GetWeeklyReportUseCase, GetMonthlyReportUseCase,
 )
-from src.adapters.api.auth_middleware import get_current_user, require_admin
+from src.web.api.auth_middleware import get_current_user, require_admin
 from src.infrastructure.database.connection import get_session
 from src.infrastructure.repositories.sqlalchemy_impression_repository import SQLAlchemyImpressionRepository
 from src.domain.entities.user import User
