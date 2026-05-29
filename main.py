@@ -18,6 +18,8 @@ async def lifespan(app: FastAPI):
 
     create_tables()
 
+    yield
+    
 app = FastAPI(
     title="Grêmio IFRN - Sistema de Impressões",
     version="1.0.0",
