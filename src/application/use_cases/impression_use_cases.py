@@ -84,13 +84,8 @@ class GetWeeklyReportUseCase:
         self._repository = repository
 
     def execute(self) -> ReportDTO:
-        today = datetime.now()
-        # Segunda-feira da semana atual (weekday 0 = segunda)
-        start = today - timedelta(days=today.weekday())
-        start = start.replace(hour=0, minute=0, second=0, microsecond=0)
-        # Domingo da semana atual
-        end = start + timedelta(days=6)
-        end = end.replace(hour=23, minute=59, second=59, microsecond=999999)
+        end = datetime.now()
+        start = end - timedelta(days=7)
         return _build_report(self._repository, start, end)
 
 
