@@ -11,15 +11,15 @@ from src.infrastructure.repositories.sqlalchemy_user_repository import SQLAlchem
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_tables()
-    session = next(get_session())
-    try:
-        SeedAdminUseCase(SQLAlchemyUserRepository(session)).execute()
-    finally:
-        session.close()
+    await create_tables()
+    async for session in get_session():
+        try:
+            await SeedAdminUseCase(SQLAlchemyUserRepository(session)).execute()
+        finally:
+            await session.close()
     yield
 
-#kk
+
 app = FastAPI(
     title="Grêmio IFRN - Sistema de Impressões",
     version="2.0.0",
@@ -39,5 +39,5 @@ app.include_router(impression_router)
 
 
 @app.get("/health")
-def health():
+async def health():
     return {"status": "ok"}

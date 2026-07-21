@@ -21,7 +21,7 @@ class CreateImpressionUseCase:
     def __init__(self, repository: ImpressionRepository):
         self.repository = repository
 
-    def execute(self, dto:CreateImpressionDTO) -> ImpressionResponseDTO:
+    async def execute(self, dto: CreateImpressionDTO) -> ImpressionResponseDTO:
         impression = Impression(
             person_name=dto.person_name,
             turma=dto.turma.strip().upper(),
@@ -30,15 +30,15 @@ class CreateImpressionUseCase:
             registered_by_name=dto.registered_by_name,
         )
 
-        saved = self.repository.save(impression)
+        saved = await self.repository.save(impression)
         return _to_response(saved)
 
 class ListImpressionsUseCase:
     def __init__(self, repository: ImpressionRepository):
         self._repository = repository
 
-    def execute(self) -> list[ImpressionResponseDTO]:
-        impressions = self._repository.find_all()
+    async def execute(self) -> list[ImpressionResponseDTO]:
+        impressions = await self._repository.find_all()
         return [_to_response(i) for i in impressions]
 
 
@@ -46,16 +46,16 @@ class DeleteImpressionUseCase:
     def __init__(self, repository: ImpressionRepository):
         self._repository = repository
 
-    def execute(self, impression_id: UUID) -> bool:
-        return self._repository.delete(impression_id)
+    async def execute(self, impression_id: UUID) -> bool:
+        return await self._repository.delete(impression_id)
 
 
 class GetDashboardUseCase:
     def __init__(self, repository: ImpressionRepository):
         self._repository = repository
 
-    def execute(self) -> DashboardSummaryDTO:
-        impressions = self._repository.find_all()
+    async def execute(self) -> DashboardSummaryDTO:
+        impressions = await self._repository.find_all()
 
         total_impressions = len(impressions)
         total_value = sum(i.value for i in impressions)
@@ -83,29 +83,28 @@ class GetWeeklyReportUseCase:
     def __init__(self, repository: ImpressionRepository):
         self._repository = repository
 
-    def execute(self) -> ReportDTO:
+    async def execute(self) -> ReportDTO:
         end = datetime.now()
         start = end - timedelta(days=7)
-        return _build_report(self._repository, start, end)
+        return await _build_report(self._repository, start, end)
 
 
 class GetMonthlyReportUseCase:
     def __init__(self, repository: ImpressionRepository):
         self._repository = repository
 
-    def execute(self) -> ReportDTO:
+    async def execute(self) -> ReportDTO:
         today = datetime.now()
         start = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        # Último dia do mês
         if today.month == 12:
             end = today.replace(year=today.year + 1, month=1, day=1) - timedelta(seconds=1)
         else:
             end = today.replace(month=today.month + 1, day=1) - timedelta(seconds=1)
-        return _build_report(self._repository, start, end)
+        return await _build_report(self._repository, start, end)
 
 
-def _build_report(repository: ImpressionRepository, start: datetime, end: datetime) -> ReportDTO:
-    impressions = repository.find_by_period(start, end)
+async def _build_report(repository: ImpressionRepository, start: datetime, end: datetime) -> ReportDTO:
+    impressions = await repository.find_by_period(start, end)
     total_impressions = len(impressions)
     total_value = sum(i.value for i in impressions)
     average_value = total_value / total_impressions if total_impressions > 0 else 0.0

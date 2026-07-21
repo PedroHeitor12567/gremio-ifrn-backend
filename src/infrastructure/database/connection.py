@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, Session
-from typing import Generator
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from typing import AsyncGenerator
 
 from src.infrastructure.database.models import Base
 
@@ -8,49 +8,46 @@ PGHOST = "ep-hidden-surf-aqhlliwz-pooler.c-8.us-east-1.aws.neon.tech"
 PGDATABASE = "neondb"
 PGUSER = "neondb_owner"
 PGPASSWORD = "npg_ytPon5AjH6KT"
-PGSSLMODE = "require"
 
 DATABASE_URL = (
-    f"postgresql+psycopg2://"
+    f"postgresql+asyncpg://"
     f"{PGUSER}:{PGPASSWORD}@"
     f"{PGHOST}/{PGDATABASE}"
-    f"?sslmode={PGSSLMODE}"
+    f"?ssl=require"
 )
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+engine = create_async_engine(DATABASE_URL, pool_pre_ping=True)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = async_sessionmaker(bind=engine, autocommit=False, autoflush=False, expire_on_commit=False)
 
 
-def test_connection():
+async def test_connection():
     try:
-        with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
+        async with engine.connect() as connection:
+            await connection.execute(text("SELECT 1"))
             print("✅ Conectado ao PostgreSQL Neon com sucesso!")
     except Exception as e:
         print("❌ Erro ao conectar no banco:")
         print(e)
 
 
-def create_tables():
+async def create_tables():
     try:
-        Base.metadata.create_all(bind=engine)
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
         print("✅ Tabelas criadas com sucesso!")
     except Exception as e:
         print("❌ Erro ao criar tabelas:")
         print(e)
 
 
-def get_session() -> Generator[Session, None, None]:
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
     session = SessionLocal()
     try:
         yield session
-        session.commit()
+        await session.commit()
     except Exception:
-        session.rollback()
+        await session.rollback()
         raise
     finally:
-        session.close()
-
-
-test_connection()
+        await session.close()

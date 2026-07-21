@@ -19,9 +19,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def _hash_password(password: str) -> str:
-    print("PASSWORD:", repr(password))
-    print("TIPO:", type(password))
-    print("BYTES:", len(password.encode("utf-8")))
     return pwd_context.hash(password)
 
 def _verify_password(plain: str, hashed: str) -> bool:
@@ -57,8 +54,8 @@ class LoginUseCase:
     def __init__(self, repository: UserRepository):
         self._repository = repository
 
-    def execute(self, dto: LoginDTO) -> TokenDTO:
-        user = self._repository.find_by_email(dto.email.lower().strip())
+    async def execute(self, dto: LoginDTO) -> TokenDTO:
+        user = await self._repository.find_by_email(dto.email.lower().strip())
         if not user:
             raise ValueError("Credenciais inválidas")
         if not user.is_active:
@@ -77,8 +74,8 @@ class CreateUserUseCase:
     def __init__(self, repository: UserRepository):
         self._repository = repository
 
-    def execute(self, dto: CreateUserDTO) -> UserResponseDTO:
-        existing = self._repository.find_by_email(dto.email.lower().strip())
+    async def execute(self, dto: CreateUserDTO) -> UserResponseDTO:
+        existing = await self._repository.find_by_email(dto.email.lower().strip())
         if existing:
             raise ValueError("Email já cadastrado")
         user = User(
@@ -88,7 +85,7 @@ class CreateUserUseCase:
             hashed_password=_hash_password(dto.password),
             role=dto.role,
         )
-        saved = self._repository.save(user)
+        saved = await self._repository.save(user)
         return _to_response(saved)
 
 
@@ -96,19 +93,20 @@ class ListUsersUseCase:
     def __init__(self, repository: UserRepository):
         self._repository = repository
 
-    def execute(self) -> list[UserResponseDTO]:
-        return [_to_response(u) for u in self._repository.find_all()]
+    async def execute(self) -> list[UserResponseDTO]:
+        users = await self._repository.find_all()
+        return [_to_response(u) for u in users]
 
 
 class UpdateUserUseCase:
     def __init__(self, repository: UserRepository):
         self._repository = repository
 
-    def execute(self, dto: UpdateUserDTO) -> UserResponseDTO:
-        user = self._repository.find_by_id(dto.user_id)
+    async def execute(self, dto: UpdateUserDTO) -> UserResponseDTO:
+        user = await self._repository.find_by_id(dto.user_id)
         if not user:
             raise ValueError("Usuário não encontrado")
-        existing = self._repository.find_by_email(dto.email.lower().strip())
+        existing = await self._repository.find_by_email(dto.email.lower().strip())
         if existing and existing.id != dto.user_id:
             raise ValueError("Email já cadastrado")
         user.name = dto.name.strip()
@@ -118,7 +116,7 @@ class UpdateUserUseCase:
         user.is_active = dto.is_active
         if dto.password:
             user.hashed_password = _hash_password(dto.password)
-        updated = self._repository.update(user)
+        updated = await self._repository.update(user)
         return _to_response(updated)
 
 
@@ -126,23 +124,23 @@ class DeleteUserUseCase:
     def __init__(self, repository: UserRepository):
         self._repository = repository
 
-    def execute(self, user_id: UUID) -> bool:
-        user = self._repository.find_by_id(user_id)
+    async def execute(self, user_id: UUID) -> bool:
+        user = await self._repository.find_by_id(user_id)
         if not user:
             raise ValueError("Usuário não encontrado")
         if user.role == UserRole.ADMIN:
-            count = self._repository.count_admins()
+            count = await self._repository.count_admins()
             if count <= 1:
                 raise ValueError("Não é possível remover o único administrador")
-        return self._repository.delete(user_id)
+        return await self._repository.delete(user_id)
 
 
 class SeedAdminUseCase:
     def __init__(self, repository: UserRepository):
         self._repository = repository
 
-    def execute(self):
-        existing = self._repository.find_by_email("admin@gremio.ifrn")
+    async def execute(self):
+        existing = await self._repository.find_by_email("admin@gremio.ifrn")
         if existing:
             return
         user = User(
@@ -152,4 +150,4 @@ class SeedAdminUseCase:
             hashed_password=_hash_password("admin123"),
             role=UserRole.ADMIN,
         )
-        self._repository.save(user)
+        await self._repository.save(user)

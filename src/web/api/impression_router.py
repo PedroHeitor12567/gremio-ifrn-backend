@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.web.schemas.impression_schema import (
     CreateImpressionSchema, ImpressionResponse, DashboardResponse, ReportResponse,
@@ -19,7 +19,7 @@ from src.domain.entities.user import User
 router = APIRouter(prefix="/impressions", tags=["impressions"])
 
 
-def get_repo(session: Session = Depends(get_session)):
+def get_repo(session: AsyncSession = Depends(get_session)):
     return SQLAlchemyImpressionRepository(session)
 
 
@@ -32,7 +32,7 @@ def _map(r) -> ImpressionResponse:
 
 
 @router.post("/", response_model=ImpressionResponse, status_code=201)
-def create_impression(
+async def create_impression(
     body: CreateImpressionSchema,
     current_user: User = Depends(get_current_user),
     repo=Depends(get_repo),
@@ -44,27 +44,27 @@ def create_impression(
         registered_by_id=current_user.id,
         registered_by_name=current_user.name,
     )
-    return _map(CreateImpressionUseCase(repo).execute(dto))
+    return _map(await CreateImpressionUseCase(repo).execute(dto))
 
 
 @router.get("/", response_model=list[ImpressionResponse])
-def list_impressions(current_user: User = Depends(get_current_user), repo=Depends(get_repo)):
-    return [_map(r) for r in ListImpressionsUseCase(repo).execute()]
+async def list_impressions(current_user: User = Depends(get_current_user), repo=Depends(get_repo)):
+    return [_map(r) for r in await ListImpressionsUseCase(repo).execute()]
 
 
 @router.delete("/{impression_id}", status_code=204)
-def delete_impression(
+async def delete_impression(
     impression_id: UUID,
     current_user: User = Depends(require_admin),
     repo=Depends(get_repo),
 ):
-    if not DeleteImpressionUseCase(repo).execute(impression_id):
+    if not await DeleteImpressionUseCase(repo).execute(impression_id):
         raise HTTPException(status_code=404, detail="Impression not found")
 
 
 @router.get("/dashboard", response_model=DashboardResponse)
-def get_dashboard(current_user: User = Depends(get_current_user), repo=Depends(get_repo)):
-    result = GetDashboardUseCase(repo).execute()
+async def get_dashboard(current_user: User = Depends(get_current_user), repo=Depends(get_repo)):
+    result = await GetDashboardUseCase(repo).execute()
     return DashboardResponse(
         total_impressions=result.total_impressions,
         total_value=result.total_value,
@@ -76,13 +76,13 @@ def get_dashboard(current_user: User = Depends(get_current_user), repo=Depends(g
 
 
 @router.get("/reports/weekly", response_model=ReportResponse)
-def weekly_report(current_user: User = Depends(get_current_user), repo=Depends(get_repo)):
-    return _build_report_response(GetWeeklyReportUseCase(repo).execute())
+async def weekly_report(current_user: User = Depends(get_current_user), repo=Depends(get_repo)):
+    return _build_report_response(await GetWeeklyReportUseCase(repo).execute())
 
 
 @router.get("/reports/monthly", response_model=ReportResponse)
-def monthly_report(current_user: User = Depends(get_current_user), repo=Depends(get_repo)):
-    return _build_report_response(GetMonthlyReportUseCase(repo).execute())
+async def monthly_report(current_user: User = Depends(get_current_user), repo=Depends(get_repo)):
+    return _build_report_response(await GetMonthlyReportUseCase(repo).execute())
 
 
 def _build_report_response(result) -> ReportResponse:

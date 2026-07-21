@@ -1,7 +1,8 @@
 from uuid import UUID
 from typing import Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select, delete as sql_delete, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.user import User, UserRole
 from src.domain.ports.user_repository import UserRepository
@@ -9,10 +10,10 @@ from src.infrastructure.database.models import UserModel
 
 
 class SQLAlchemyUserRepository(UserRepository):
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self._session = session
 
-    def save(self, user: User) -> User:
+    async def save(self, user: User) -> User:
         model = UserModel(
             id=str(user.id),
             name=user.name,
@@ -24,24 +25,36 @@ class SQLAlchemyUserRepository(UserRepository):
             created_at=user.created_at,
         )
         self._session.add(model)
-        self._session.commit()
-        self._session.refresh(model)
+        await self._session.commit()
+        await self._session.refresh(model)
         return self._to_entity(model)
 
-    def find_by_id(self, user_id: UUID) -> Optional[User]:
-        model = self._session.query(UserModel).filter(UserModel.id == str(user_id)).first()
+    async def find_by_id(self, user_id: UUID) -> Optional[User]:
+        result = await self._session.execute(
+            select(UserModel).where(UserModel.id == str(user_id))
+        )
+        model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    def find_by_email(self, email: str) -> Optional[User]:
-        model = self._session.query(UserModel).filter(UserModel.email == email).first()
+    async def find_by_email(self, email: str) -> Optional[User]:
+        result = await self._session.execute(
+            select(UserModel).where(UserModel.email == email)
+        )
+        model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    def find_all(self) -> list[User]:
-        models = self._session.query(UserModel).order_by(UserModel.created_at.asc()).all()
+    async def find_all(self) -> list[User]:
+        result = await self._session.execute(
+            select(UserModel).order_by(UserModel.created_at.asc())
+        )
+        models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
-    def update(self, user: User) -> User:
-        model = self._session.query(UserModel).filter(UserModel.id == str(user.id)).first()
+    async def update(self, user: User) -> User:
+        result = await self._session.execute(
+            select(UserModel).where(UserModel.id == str(user.id))
+        )
+        model = result.scalar_one_or_none()
         if not model:
             raise ValueError("User not found")
         model.name = user.name
@@ -50,22 +63,30 @@ class SQLAlchemyUserRepository(UserRepository):
         model.hashed_password = user.hashed_password
         model.role = user.role.value
         model.is_active = user.is_active
-        self._session.commit()
-        self._session.refresh(model)
+        await self._session.commit()
+        await self._session.refresh(model)
         return self._to_entity(model)
 
-    def delete(self, user_id: UUID) -> bool:
-        model = self._session.query(UserModel).filter(UserModel.id == str(user_id)).first()
+    async def delete(self, user_id: UUID) -> bool:
+        result = await self._session.execute(
+            select(UserModel).where(UserModel.id == str(user_id))
+        )
+        model = result.scalar_one_or_none()
         if not model:
             return False
-        self._session.delete(model)
-        self._session.commit()
+        await self._session.execute(
+            sql_delete(UserModel).where(UserModel.id == str(user_id))
+        )
+        await self._session.commit()
         return True
 
-    def count_admins(self) -> int:
-        return self._session.query(UserModel).filter(
-            UserModel.role == "admin", UserModel.is_active == True
-        ).count()
+    async def count_admins(self) -> int:
+        result = await self._session.execute(
+            select(func.count()).select_from(UserModel).where(
+                UserModel.role == "admin", UserModel.is_active == True
+            )
+        )
+        return result.scalar_one()
 
     def _to_entity(self, model: UserModel) -> User:
         return User(
